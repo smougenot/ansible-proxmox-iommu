@@ -1,0 +1,50 @@
+---
+name: CI
+
+# Controls when the action will run.
+on: # yamllint disable-line rule:truthy
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check linters directory
+        run: |
+          if [ ! -d ".github/linters" ];then
+          echo "create .github/linters directory";
+          mkdir .github/linters
+          fi
+
+      - name: Lint Code Base
+        uses: super-linter/super-linter/slim@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_CHECKOV: false
+          DEFAULT_BRANCH: master
+          IGNORE_GITIGNORED_FILES: true
+          ANSIBLE_DIRECTORY: ./
+          GITHUB_ACTIONS_COMMAND_ARGS: --ignore .*SC2046:warning.*
+          FILTER_REGEX_EXCLUDE: \.git
